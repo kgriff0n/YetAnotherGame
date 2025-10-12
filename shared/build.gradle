@@ -1,0 +1,5 @@
+eclipse.project.name = appName + '-shared'
+
+dependencies {
+  api "com.github.crykn:kryonet:$kryoNetVersion"
+}
