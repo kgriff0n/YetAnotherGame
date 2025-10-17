@@ -14,6 +14,7 @@ import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.minlog.Log;
 import dev.kgriffon.simplegame.MainGame;
+import dev.kgriffon.simplegame.Shared;
 import dev.kgriffon.simplegame.entity.Player;
 import dev.kgriffon.simplegame.entity.Projectile;
 import dev.kgriffon.simplegame.network.Network;
@@ -21,6 +22,7 @@ import dev.kgriffon.simplegame.network.packet.c2s.LoginRequest;
 import dev.kgriffon.simplegame.network.packet.c2s.PlayerMove;
 import dev.kgriffon.simplegame.network.packet.c2s.ShootProjectile;
 import dev.kgriffon.simplegame.network.packet.s2c.*;
+import dev.kgriffon.simplegame.score.ScoreEntry;
 
 import java.awt.*;
 import java.io.IOException;
@@ -43,6 +45,7 @@ public class GameScreen implements Screen {
 
     private final ConcurrentHashMap<Integer, Player> players = new ConcurrentHashMap<>();
     private final ArrayList<Projectile> projectiles = new ArrayList<>();
+    private final ArrayList<ScoreEntry> scoreboard = new ArrayList<>();
 
     public GameScreen(String username, String ip) {
         this.username = username;
@@ -109,6 +112,16 @@ public class GameScreen implements Screen {
                     }
                 } else if (packet instanceof PlayerRemove pkt) {
                     players.remove(pkt.getPlayerId());
+                } else if (packet instanceof Scoreboard pkt) {
+                    scoreboard.clear();
+
+                    int[] ids = pkt.getIds();
+                    String[] usernames = pkt.getUsernames();
+                    int[] scores = pkt.getScores();
+
+                    for (int i = 0; i < ids.length; i++) {
+                        scoreboard.add(new ScoreEntry(ids[i], usernames[i], scores[i]));
+                    }
                 }
             }
         }));
@@ -159,6 +172,16 @@ public class GameScreen implements Screen {
             layout.setText(font, health);
             font.draw(batch, health, player.getX() - layout.width / 2, player.getY() + 30);
         }
+
+        int lineY = 10;
+        for (ScoreEntry score : scoreboard) {
+            Color color = players.get(score.getId()).getColor();
+            font.setColor(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, color.getAlpha() / 255f);
+            String line = "%s - %d".formatted(score.getUsername(), score.getScore());
+            layout.setText(font, line);
+            font.draw(batch, line, Shared.WIDTH - layout.width - 10, Shared.HEIGHT - lineY);
+            lineY += (int) (layout.height + 10);
+        }
         batch.end();
     }
 
@@ -182,7 +205,7 @@ public class GameScreen implements Screen {
                 move = true;
             }
             if (move) {
-                PlayerMove pkt = new PlayerMove(player.getId(), player.getX(), player.getY());
+                PlayerMove pkt = new PlayerMove(player.getX(), player.getY());
                 client.sendUDP(pkt);
             }
 
@@ -214,7 +237,7 @@ public class GameScreen implements Screen {
         Log.info("Closing game...");
         shapeRenderer.dispose();
         client.stop();
-        System.exit(0); //FIXME hacky thing
+        //FIXME doesn't work
     }
 }
 

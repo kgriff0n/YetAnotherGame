@@ -13,6 +13,7 @@ import dev.kgriffon.simplegame.network.packet.c2s.LoginRequest;
 import dev.kgriffon.simplegame.network.packet.c2s.PlayerMove;
 import dev.kgriffon.simplegame.network.packet.c2s.ShootProjectile;
 import dev.kgriffon.simplegame.network.packet.s2c.*;
+import dev.kgriffon.simplegame.score.ScoreManager;
 import dev.kgriffon.simplegame.util.ColorUtil;
 
 import java.awt.*;
@@ -29,6 +30,7 @@ public class ServerLauncher {
     private final Server server;
     private final ConcurrentHashMap<Integer, Player> players = new ConcurrentHashMap<>();
     private final ArrayList<Projectile> projectiles = new ArrayList<>(); //TODO check for ConcurrentModificationException
+    private final ScoreManager scoreManager;
 
     private long bytesSent = 0;
     private long bytesReceived = 0;
@@ -43,6 +45,8 @@ public class ServerLauncher {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(this::tick, 0, 50, TimeUnit.MILLISECONDS);
 
+        // Init
+        scoreManager = new ScoreManager();
 
         server.addListener(new Listener() {
             @Override
@@ -54,6 +58,7 @@ public class ServerLauncher {
             public void received(Connection connection, Object packet) {
                 bytesReceived += estimatePacketSize(packet);
                 if (packet instanceof LoginRequest pkt) {
+                    // Player initialization
                     int id = connection.getID();
                     Color color = ColorUtil.randomColor();
                     float x = (float) (Math.random() * 100);
@@ -90,15 +95,17 @@ public class ServerLauncher {
                     server.sendToAllExceptTCP(connection.getID(), new NewPlayer(currentPlayer));
                     bytesSent += (long) estimatePacketSize(new NewPlayer(currentPlayer)) * (server.getConnections().size() - 1);
                     players.put(id, currentPlayer);
+                    scoreManager.add(id, pkt.getUsername());
+                    server.sendToAllTCP(scoreManager.createPacket());
 
                 } else if (packet instanceof PlayerMove pkt) {
-                    Player player = players.get(pkt.getId()); //FIXME id is useless in pkt, should use connection.getId() instead
+                    Player player = players.get(connection.getID());
                     if (player != null) {
                         //TODO check for move validity
                         player.setX(pkt.getX()); // update context
                         player.setY(pkt.getY());
-                        server.sendToAllUDP(new PlayerPosition(pkt.getId(), pkt.getX(), pkt.getY()));
-                        bytesSent += (long) estimatePacketSize(new PlayerPosition(pkt.getId(), pkt.getX(), pkt.getY())) * server.getConnections().size();
+                        server.sendToAllUDP(new PlayerPosition(connection.getID(), pkt.getX(), pkt.getY()));
+                        bytesSent += (long) estimatePacketSize(new PlayerPosition(connection.getID(), pkt.getX(), pkt.getY())) * server.getConnections().size();
                     }
                 } else if (packet instanceof ShootProjectile pkt) {
                     Player player = players.get(connection.getID());
@@ -116,7 +123,9 @@ public class ServerLauncher {
                 System.out.println("[SERVER] Sent: " + bytesSent + " bytes | Received: " + bytesReceived + " bytes");
                 int playerId = connection.getID();
                 players.remove(playerId);
+                scoreManager.remove(playerId);
                 server.sendToAllExceptTCP(playerId, new PlayerRemove(playerId));
+                server.sendToAllExceptTCP(playerId, scoreManager.createPacket());
             }
         });
 
@@ -127,9 +136,9 @@ public class ServerLauncher {
         float delta = 0.05f; // 50ms
         Iterator<Projectile> iterator = projectiles.iterator();
         while (iterator.hasNext()) {
-            Projectile p = iterator.next();
-            p.update(delta);
-            Player player = p.collide(players.values());
+            Projectile projectile = iterator.next();
+            projectile.update(delta);
+            Player player = projectile.collide(players.values());
             if (player != null) {
                 player.setHealth(player.getHealth() - 1); // update context
                 if (player.getHealth() == 0) { // respawn
@@ -137,10 +146,14 @@ public class ServerLauncher {
                     player.setX((float) (Math.random() * Shared.WIDTH));
                     player.setY((float) (Math.random() * Shared.HEIGHT));
                     server.sendToAllTCP(new PlayerPosition(player.getId(), player.getX(), player.getY()));
+
+                    // Update scoreboard
+                    scoreManager.update(projectile.getPlayerId(), scoreManager.getScore(projectile.getPlayerId()) + 1);
+                    server.sendToAllTCP(scoreManager.createPacket());
                 }
                 server.sendToAllTCP(new PlayerHealthUpdate(player.getId(), player.getHealth()));
             }
-            if (!p.isLoaded()) iterator.remove();
+            if (!projectile.isLoaded()) iterator.remove();
         }
 
         //TODO maybe re-send projectiles positions sometimes to resync everything

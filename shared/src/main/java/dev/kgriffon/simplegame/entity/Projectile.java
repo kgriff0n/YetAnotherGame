@@ -55,13 +55,13 @@ public class Projectile {
     public void update(float delta) {
         x += SPEED * dx * delta;
         y += SPEED * dy * delta;
-//        if (x < 0 || x > Shared.WIDTH || y < 0 || y > Shared.HEIGHT) loaded = false;
-        if (x < 0 || x > Shared.WIDTH) {
-            dx = -dx;
-        }
-        if (y < 0 || y > Shared.HEIGHT) {
-            dy = -dy;
-        }
+        if (x < 0 || x > Shared.WIDTH || y < 0 || y > Shared.HEIGHT) loaded = false;
+//        if (x < 0 || x > Shared.WIDTH) {
+//            dx = -dx;
+//        }
+//        if (y < 0 || y > Shared.HEIGHT) {
+//            dy = -dy;
+//        }
     }
 
     public boolean isLoaded() {
@@ -71,7 +71,7 @@ public class Projectile {
     public Player collide(Collection<Player> players) {
         for (Player player : players) {
             if (Math.abs(player.getX() - getX()) < 20 && Math.abs(player.getY() - getY()) < 20 && player.getId() != getPlayerId()) {
-                Log.info(String.format("%s %d / %d", player.getUsername(), player.getId(), getPlayerId()));
+//                Log.info(String.format("%s %d / %d", player.getUsername(), player.getId(), getPlayerId()));
                 return player;
             }
         }

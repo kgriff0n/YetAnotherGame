@@ -1,6 +1,6 @@
 package dev.kgriffon.simplegame.network.packet.s2c;
 
-public class ProjectilesBatch {
+public class ProjectilesBatch { //FIXME crash if too many projectiles
 
     private int[] playerId;
     private float[] x;

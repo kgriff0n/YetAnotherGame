@@ -1,10 +1,9 @@
 package dev.kgriffon.simplegame.util;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.Random;
 
 public class ColorUtil {
-
 
     public static Color randomColor() {
         Random rand = new Random();
