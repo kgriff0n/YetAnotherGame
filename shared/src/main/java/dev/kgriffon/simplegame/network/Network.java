@@ -29,6 +29,7 @@ public class Network {
         KRYO.register(PlayerPosition.class);
         KRYO.register(PlayerRemove.class);
         KRYO.register(ProjectilesBatch.class);
+        KRYO.register(RemoveProjectile.class);
         KRYO.register(Scoreboard.class);
 
         // Java classes

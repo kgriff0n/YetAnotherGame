@@ -4,19 +4,33 @@ import dev.kgriffon.simplegame.Shared;
 
 import java.awt.*;
 
-public class Player {
+public class Player extends Entity {
 
     private final int id;
     private final String username;
+    private final String face;
     private int health;
     private final Color color;
     private float x;
     private float y;
 
-    public Player(int id, String username, Color color, float x, float y) {
+    public Player(int id, String username, String face, Color color, float x, float y) {
+        super(32, 32);
         this.id = id;
         this.username = username;
+        this.face = face;
         this.health = 3;
+        this.color = color;
+        this.x = x;
+        this.y = y;
+    }
+
+    public Player(int id, String username, String face, Color color, float x, float y, int health) {
+        super(32, 32);
+        this.id = id;
+        this.username = username;
+        this.face = face;
+        this.health = health;
         this.color = color;
         this.x = x;
         this.y = y;
@@ -28,6 +42,10 @@ public class Player {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getFace() {
+        return face;
     }
 
     public int getHealth() {

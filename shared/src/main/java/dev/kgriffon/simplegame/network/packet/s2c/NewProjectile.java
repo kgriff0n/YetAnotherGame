@@ -2,6 +2,8 @@ package dev.kgriffon.simplegame.network.packet.s2c;
 
 public class NewProjectile {
 
+    private int id;
+    private int playerId;
     private float x;
     private float y;
     private float dx;
@@ -11,12 +13,22 @@ public class NewProjectile {
     public NewProjectile() {
     }
 
-    public NewProjectile(float x, float y, float dx, float dy, int rgb) {
+    public NewProjectile(int id, int playerId, float x, float y, float dx, float dy, int rgb) {
+        this.id = id;
+        this.playerId = playerId;
         this.x = x;
         this.y = y;
         this.dx = dx;
         this.dy = dy;
         this.rgb = rgb;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getPlayerId() {
+        return playerId;
     }
 
     public float getX() {

@@ -7,6 +7,7 @@ import java.awt.*;
 public class NewPlayer {
     private int id;
     private String username;
+    private String face;
     private int health;
     private int rgb;
     private float x;
@@ -18,6 +19,7 @@ public class NewPlayer {
     public NewPlayer(Player player) {
         this.id = player.getId();
         this.username = player.getUsername();
+        this.face = player.getFace();
         this.health = player.getHealth();
         this.rgb = player.getColor().getRGB();
         this.x = player.getX();
@@ -39,6 +41,14 @@ public class NewPlayer {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getFace() {
+        return face;
+    }
+
+    public int getHealth() {
+        return health;
     }
 
     public int getRGB() {

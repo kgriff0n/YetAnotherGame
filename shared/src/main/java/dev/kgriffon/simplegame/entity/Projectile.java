@@ -1,15 +1,16 @@
 package dev.kgriffon.simplegame.entity;
 
-import com.esotericsoftware.minlog.Log;
 import dev.kgriffon.simplegame.Shared;
 
 import java.awt.Color;
 import java.util.Collection;
 
-public class Projectile {
+public class Projectile extends Entity {
 
     private static final float SPEED = 600;
+    private static int ID = 0;
 
+    private final int id;
     private final int playerId;
     private float x;
     private float y;
@@ -18,7 +19,15 @@ public class Projectile {
     private final Color color;
     private boolean loaded;
 
+    /** Should only be used by server (to generate new ID) */
     public Projectile(int playerId, float x, float y, float dx, float dy, Color color) {
+        this(ID++, playerId, x, y, dx, dy, color);
+    }
+
+    /** Should only be used by client */
+    public Projectile(int id, int playerId, float x, float y, float dx, float dy, Color color) {
+        super(16, 16);
+        this.id = id;
         this.playerId = playerId;
         this.x = x;
         this.y = y;
@@ -26,6 +35,10 @@ public class Projectile {
         this.dy = dy;
         this.color = color;
         this.loaded = true;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public int getPlayerId() {
@@ -64,6 +77,10 @@ public class Projectile {
 //        }
     }
 
+    public void setLoaded(boolean loaded) {
+        this.loaded = loaded;
+    }
+
     public boolean isLoaded() {
         return loaded;
     }
@@ -76,5 +93,10 @@ public class Projectile {
             }
         }
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "Projectile[id=%d,playerId=%d,dx=%f,dy=%f]".formatted(id, playerId, dx, dy);
     }
 }

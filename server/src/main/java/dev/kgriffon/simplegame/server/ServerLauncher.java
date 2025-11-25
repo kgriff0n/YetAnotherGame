@@ -32,8 +32,8 @@ public class ServerLauncher {
     private final ArrayList<Projectile> projectiles = new ArrayList<>(); //TODO check for ConcurrentModificationException
     private final ScoreManager scoreManager;
 
-    private long bytesSent = 0;
-    private long bytesReceived = 0;
+//    private long bytesSent = 0;
+//    private long bytesReceived = 0;
 
     public ServerLauncher() throws IOException {
         server = new Server();
@@ -56,24 +56,25 @@ public class ServerLauncher {
 
             @Override
             public void received(Connection connection, Object packet) {
-                bytesReceived += estimatePacketSize(packet);
+//                bytesReceived += estimatePacketSize(packet);
                 if (packet instanceof LoginRequest pkt) {
                     // Player initialization
                     int id = connection.getID();
                     Color color = ColorUtil.randomColor();
-                    float x = (float) (Math.random() * 100);
-                    float y = (float) (Math.random() * 100);
-                    Player currentPlayer = new Player(id, pkt.getUsername(), color, x, y);
+                    float x = (float) (Math.random() * Shared.WIDTH);
+                    float y = (float) (Math.random() * Shared.HEIGHT);
+                    Player currentPlayer = new Player(id, pkt.getUsername(), pkt.getFace(), color, x, y);
                     server.sendToTCP(id, new LoginResponse(id, color.getRGB(), x, y));
-                    bytesSent += estimatePacketSize(new LoginResponse(id, color.getRGB(), x, y));
+//                    bytesSent += estimatePacketSize(new LoginResponse(id, color.getRGB(), x, y));
 
                     Log.info("[SERVER] Send LoginResponse to " + connection.getID());
 
                     for (Player player : players.values()) {
                         connection.sendTCP(new NewPlayer(player));
-                        bytesSent += estimatePacketSize(new NewPlayer(player));
+//                        bytesSent += estimatePacketSize(new NewPlayer(player));
                     }
 
+                    int[] ids = new int[projectiles.size()];
                     int[] playerId = new int[projectiles.size()];
                     float[] pX = new float[projectiles.size()];
                     float[] pY = new float[projectiles.size()];
@@ -82,6 +83,7 @@ public class ServerLauncher {
                     int[] rgb = new int[projectiles.size()];
                     for (int i = 0; i < projectiles.size(); i++) {
                         Projectile projectile = projectiles.get(i);
+                        ids[i] = projectile.getId();
                         playerId[i] = projectile.getPlayerId();
                         pX[i] = projectile.getX();
                         pY[i] = projectile.getY();
@@ -89,11 +91,11 @@ public class ServerLauncher {
                         dy[i] = projectile.getDy();
                         rgb[i] = projectile.getColor().getRGB();
                     }
-                    connection.sendTCP(new ProjectilesBatch(playerId, pX, pY, dx, dy, rgb));
-                    bytesSent += estimatePacketSize(new ProjectilesBatch(playerId, pX, pY, dx, dy, rgb));
+                    connection.sendTCP(new ProjectilesBatch(ids, playerId, pX, pY, dx, dy, rgb));
+//                    bytesSent += estimatePacketSize(new ProjectilesBatch(playerId, pX, pY, dx, dy, rgb));
 
                     server.sendToAllExceptTCP(connection.getID(), new NewPlayer(currentPlayer));
-                    bytesSent += (long) estimatePacketSize(new NewPlayer(currentPlayer)) * (server.getConnections().size() - 1);
+//                    bytesSent += (long) estimatePacketSize(new NewPlayer(currentPlayer)) * (server.getConnections().size() - 1);
                     players.put(id, currentPlayer);
                     scoreManager.add(id, pkt.getUsername());
                     server.sendToAllTCP(scoreManager.createPacket());
@@ -105,22 +107,23 @@ public class ServerLauncher {
                         player.setX(pkt.getX()); // update context
                         player.setY(pkt.getY());
                         server.sendToAllUDP(new PlayerPosition(connection.getID(), pkt.getX(), pkt.getY()));
-                        bytesSent += (long) estimatePacketSize(new PlayerPosition(connection.getID(), pkt.getX(), pkt.getY())) * server.getConnections().size();
+//                        bytesSent += (long) estimatePacketSize(new PlayerPosition(connection.getID(), pkt.getX(), pkt.getY())) * server.getConnections().size();
                     }
                 } else if (packet instanceof ShootProjectile pkt) {
                     Player player = players.get(connection.getID());
                     if (player != null) {
                         //TODO check for projectile validity
-                        projectiles.add(new Projectile(connection.getID(), pkt.getX(), pkt.getY(), pkt.getDx(), pkt.getDy(), player.getColor()));
-                        server.sendToAllExceptTCP(connection.getID(), new NewProjectile(pkt.getX(), pkt.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB()));
-                        bytesSent += (long) estimatePacketSize(new NewProjectile(pkt.getX(), pkt.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB())) * (server.getConnections().size() - 1);
+                        Projectile projectile = new Projectile(connection.getID(), player.getX(), player.getY(), pkt.getDx(), pkt.getDy(), player.getColor());
+                        projectiles.add(projectile);
+                        server.sendToAllTCP(new NewProjectile(projectile.getId(), player.getId(), player.getX(), player.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB()));
+//                        bytesSent += (long) estimatePacketSize(new NewProjectile(pkt.getX(), pkt.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB())) * (server.getConnections().size() - 1);
                     }
                 }
             }
 
             @Override
             public void disconnected(Connection connection) {
-                System.out.println("[SERVER] Sent: " + bytesSent + " bytes | Received: " + bytesReceived + " bytes");
+//                System.out.println("[SERVER] Sent: " + bytesSent + " bytes | Received: " + bytesReceived + " bytes");
                 int playerId = connection.getID();
                 players.remove(playerId);
                 scoreManager.remove(playerId);
@@ -140,6 +143,8 @@ public class ServerLauncher {
             projectile.update(delta);
             Player player = projectile.collide(players.values());
             if (player != null) {
+                projectile.setLoaded(false);
+                server.sendToAllTCP(new RemoveProjectile(projectile.getId())); // remove projectile
                 player.setHealth(player.getHealth() - 1); // update context
                 if (player.getHealth() == 0) { // respawn
                     player.setHealth(3);
@@ -159,11 +164,11 @@ public class ServerLauncher {
         //TODO maybe re-send projectiles positions sometimes to resync everything
     }
 
-    private int estimatePacketSize(Object obj) {
-        Output output = new Output(1024, -1);
-        Network.KRYO.writeClassAndObject(output, obj);
-        return output.position();
-    }
+//    private int estimatePacketSize(Object obj) {
+//        Output output = new Output(1024, -1);
+//        Network.KRYO.writeClassAndObject(output, obj);
+//        return output.position();
+//    }
 
     public static void main(String[] args) throws IOException {
         new ServerLauncher();
