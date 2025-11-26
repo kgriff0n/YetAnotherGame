@@ -8,14 +8,11 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.minlog.Log;
-import dev.kgriffon.simplegame.MainGame;
 import dev.kgriffon.simplegame.Shared;
 import dev.kgriffon.simplegame.entity.Player;
 import dev.kgriffon.simplegame.entity.Projectile;
@@ -28,11 +25,11 @@ import dev.kgriffon.simplegame.score.ScoreEntry;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class GameScreen implements Screen {
@@ -51,8 +48,8 @@ public class GameScreen implements Screen {
     private float speed = 200;
 
     private final ConcurrentHashMap<Integer, Player> players = new ConcurrentHashMap<>();
-    private final ArrayList<Projectile> projectiles = new ArrayList<>();
-    private final ArrayList<ScoreEntry> scoreboard = new ArrayList<>();
+    private final ConcurrentLinkedQueue<Projectile> projectiles = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<ScoreEntry> scoreboard = new ConcurrentLinkedQueue<>();
 
     public GameScreen(String username, String ip, String face) {
         this.username = username;

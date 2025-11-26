@@ -1,6 +1,5 @@
 package dev.kgriffon.simplegame.server;
 
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
@@ -18,18 +17,14 @@ import dev.kgriffon.simplegame.util.ColorUtil;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /** Launches the server application. */
 public class ServerLauncher {
     private final Server server;
     private final ConcurrentHashMap<Integer, Player> players = new ConcurrentHashMap<>();
-    private final ArrayList<Projectile> projectiles = new ArrayList<>(); //TODO check for ConcurrentModificationException
+    private final ConcurrentLinkedQueue<Projectile> projectiles = new ConcurrentLinkedQueue<>();
     private final ScoreManager scoreManager;
 
 //    private long bytesSent = 0;
@@ -81,8 +76,9 @@ public class ServerLauncher {
                     float[] dx = new float[projectiles.size()];
                     float[] dy = new float[projectiles.size()];
                     int[] rgb = new int[projectiles.size()];
-                    for (int i = 0; i < projectiles.size(); i++) {
-                        Projectile projectile = projectiles.get(i);
+
+                    int i = 0;
+                    for (Projectile projectile : projectiles) {
                         ids[i] = projectile.getId();
                         playerId[i] = projectile.getPlayerId();
                         pX[i] = projectile.getX();
@@ -90,6 +86,7 @@ public class ServerLauncher {
                         dx[i] = projectile.getDx();
                         dy[i] = projectile.getDy();
                         rgb[i] = projectile.getColor().getRGB();
+                        i++;
                     }
                     connection.sendTCP(new ProjectilesBatch(ids, playerId, pX, pY, dx, dy, rgb));
 //                    bytesSent += estimatePacketSize(new ProjectilesBatch(playerId, pX, pY, dx, dy, rgb));
