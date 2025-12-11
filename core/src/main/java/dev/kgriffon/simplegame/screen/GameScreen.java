@@ -3,12 +3,17 @@ package dev.kgriffon.simplegame.screen;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
@@ -43,6 +48,12 @@ public class GameScreen implements Screen {
     private Texture playerTexture;
     private Map<String, Texture> playerFaces;
 
+    private final float cameraLerp = 0.2f;
+    private final OrthographicCamera worldCamera;
+    private final ScreenViewport worldViewport;
+    private final OrthographicCamera uiCamera;
+    private final ScreenViewport uiViewport;
+
     private Client client;
     private Player player;
     private float speed = 200;
@@ -56,6 +67,11 @@ public class GameScreen implements Screen {
         this.ip = ip;
         this.face = face;
         playerFaces = new HashMap<>();
+
+        worldCamera = new OrthographicCamera();
+        worldViewport = new ScreenViewport(worldCamera);
+        uiCamera = new OrthographicCamera();
+        uiViewport = new ScreenViewport(uiCamera);
     }
 
     @Override
@@ -65,6 +81,7 @@ public class GameScreen implements Screen {
         parameter.characters =  FreeTypeFontGenerator.DEFAULT_CHARS + "♥★♠♦♣éèàùç";
         parameter.size = 16;
         font = generator.generateFont(parameter);
+        font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         generator.dispose();
         batch = new SpriteBatch();
         projectileTexture = new Texture("texture/entity/bullet.png");
@@ -163,6 +180,17 @@ public class GameScreen implements Screen {
         // Clear screen
         ScreenUtils.clear(1, 1, 1, 1);
 
+        // Center camera
+        if (player != null) {
+            worldCamera.position.x += (player.getX() - worldCamera.position.x) * cameraLerp;
+            worldCamera.position.y += (player.getY() - worldCamera.position.y) * cameraLerp;
+            worldCamera.position.x = Math.round(worldCamera.position.x);
+            worldCamera.position.y = Math.round(worldCamera.position.y);
+        }
+
+        worldCamera.update();
+        batch.setProjectionMatrix(worldCamera.combined);
+
         // Render
         batch.begin();
         font.setColor(0,0,0,1);
@@ -190,7 +218,9 @@ public class GameScreen implements Screen {
                 player.getHitboxHeight());
             // Username
             layout.setText(font, player.getUsername());
-            font.draw(batch, player.getUsername(), player.getX() - layout.width / 2, player.getY() + 45);
+            int usernameX = Math.round(player.getX() - layout.width / 2);
+            int usernameY = Math.round(player.getY() + 45);
+            font.draw(batch, player.getUsername(), usernameX, usernameY);
             // Health
             String health = "♥".repeat(Math.max(0, player.getHealth()));
             layout.setText(font, health);
@@ -208,21 +238,40 @@ public class GameScreen implements Screen {
                 projectile.getHitboxHeight());
         }
 
-        // Scoreboard
-        int lineY = 10;
-        for (ScoreEntry score : scoreboard) {
-            Color color = players.get(score.getId()).getColor();
-            font.setColor(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, color.getAlpha() / 255f);
-            String line = "%s - %d".formatted(score.getUsername(), score.getScore());
-            layout.setText(font, line);
-            font.draw(batch, line, Shared.WIDTH - layout.width - 10, Shared.HEIGHT - lineY);
-            lineY += (int) (layout.height + 10);
-        }
-
         // Cursor
 //        float mouseX = Gdx.input.getX();
 //        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
 //        batch.draw(projectileTexture, mouseX, mouseY);
+
+        batch.end();
+
+        // HUD Render
+        uiCamera.update();
+        batch.setProjectionMatrix(uiCamera.combined);
+
+        batch.begin();
+
+        font.setColor(1,1,1,1);
+//        GlyphLayout hudLayout = new GlyphLayout();
+
+        int lineY = 10;
+
+        for (ScoreEntry score : scoreboard) {
+            Player p = players.get(score.getId());
+            Color c = p.getColor();
+
+            font.setColor(c.getRed()/255f, c.getGreen()/255f, c.getBlue()/255f, c.getAlpha()/255f);
+
+            String line = "%s - %d".formatted(score.getUsername(), score.getScore());
+            layout.setText(font, line);
+
+            font.draw(batch, line,
+                uiViewport.getWorldWidth() - layout.width - 10,
+                uiViewport.getWorldHeight() - lineY
+            );
+
+            lineY += (int) (layout.height + 10);
+        }
 
         batch.end();
     }
@@ -252,24 +301,22 @@ public class GameScreen implements Screen {
             }
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                float dx = Gdx.input.getX() - player.getX();
-                float dy = Gdx.graphics.getHeight() - Gdx.input.getY() - player.getY();
+                Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+                worldViewport.unproject(mouse);
+                float dx = mouse.x - player.getX();
+                float dy = mouse.y - player.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
-//                projectiles.add(new Projectile(
-//                    player.getId(),
-//                    player.getX(),
-//                    player.getY(),
-//                    dx / distance,
-//                    dy / distance,
-//                    player.getColor()
-//                ));
                 ShootProjectile pkt = new ShootProjectile(dx / distance, dy / distance);
                 client.sendTCP(pkt);
             }
         }
     }
 
-    @Override public void resize(int width, int height) {}
+    @Override public void resize(int width, int height) {
+        worldViewport.update(width, height, true);
+        uiViewport.update(width, height, true);
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}

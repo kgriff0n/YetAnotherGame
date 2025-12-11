@@ -71,10 +71,15 @@ public class MenuScreen implements Screen {
         table.add(typeTable).pad(5).row();
 
         table.add(connectButton).colspan(2).padTop(20);
-
         connectButton.addListener(new ClickListener() {
+            private boolean clicked = false;
+
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                if (clicked) return;
+                clicked = true;
+
+                connectButton.setDisabled(true); // visuel
                 String username = nameField.getText().trim();
                 String ip = ipField.getText().trim();
                 if (username.isEmpty()) username = String.format("Player%03d", (int) (Math.random() * 999));

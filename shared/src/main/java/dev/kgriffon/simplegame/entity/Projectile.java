@@ -1,7 +1,5 @@
 package dev.kgriffon.simplegame.entity;
 
-import dev.kgriffon.simplegame.Shared;
-
 import java.awt.Color;
 import java.util.Collection;
 
@@ -18,6 +16,7 @@ public class Projectile extends Entity {
     private float dy;
     private final Color color;
     private boolean loaded;
+    private float time;
 
     /** Should only be used by server (to generate new ID) */
     public Projectile(int playerId, float x, float y, float dx, float dy, Color color) {
@@ -35,6 +34,7 @@ public class Projectile extends Entity {
         this.dy = dy;
         this.color = color;
         this.loaded = true;
+        this.time = 5f;
     }
 
     public int getId() {
@@ -68,7 +68,9 @@ public class Projectile extends Entity {
     public void update(float delta) {
         x += SPEED * dx * delta;
         y += SPEED * dy * delta;
-        if (x < 0 || x > Shared.WIDTH || y < 0 || y > Shared.HEIGHT) loaded = false;
+        time -= delta;
+        if (time <= 0) loaded = false;
+//        if (x < 0 || x > Shared.WIDTH || y < 0 || y > Shared.HEIGHT) loaded = false;
 //        if (x < 0 || x > Shared.WIDTH) {
 //            dx = -dx;
 //        }

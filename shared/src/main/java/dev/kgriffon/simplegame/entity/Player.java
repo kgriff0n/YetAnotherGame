@@ -65,8 +65,8 @@ public class Player extends Entity {
     }
 
     public void setX(float x) {
-        if (x < 0) x = 0;
-        else if (x > Shared.WIDTH) x = Shared.WIDTH;
+//        if (x < 0) x = 0;
+//        else if (x > Shared.WIDTH) x = Shared.WIDTH;
         this.x = x;
     }
 
@@ -75,8 +75,8 @@ public class Player extends Entity {
     }
 
     public void setY(float y) {
-        if (y < 0) y = 0;
-        else if (y > Shared.HEIGHT) y = Shared.HEIGHT;
+//        if (y < 0) y = 0;
+//        else if (y > Shared.HEIGHT) y = Shared.HEIGHT;
         this.y = y;
     }
 }
