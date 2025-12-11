@@ -6,6 +6,7 @@ import com.esotericsoftware.kryonet.EndPoint;
 import dev.kgriffon.simplegame.network.packet.c2s.LoginRequest;
 import dev.kgriffon.simplegame.network.packet.c2s.PlayerMove;
 import dev.kgriffon.simplegame.network.packet.c2s.ShootProjectile;
+import dev.kgriffon.simplegame.network.packet.c2s.SuicidePacket;
 import dev.kgriffon.simplegame.network.packet.s2c.*;
 
 public class Network {
@@ -20,6 +21,7 @@ public class Network {
         KRYO.register(LoginRequest.class);
         KRYO.register(PlayerMove.class);
         KRYO.register(ShootProjectile.class);
+        KRYO.register(SuicidePacket.class);
 
         // Server → Client
         KRYO.register(LoginResponse.class);

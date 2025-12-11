@@ -11,6 +11,7 @@ import dev.kgriffon.simplegame.network.Network;
 import dev.kgriffon.simplegame.network.packet.c2s.LoginRequest;
 import dev.kgriffon.simplegame.network.packet.c2s.PlayerMove;
 import dev.kgriffon.simplegame.network.packet.c2s.ShootProjectile;
+import dev.kgriffon.simplegame.network.packet.c2s.SuicidePacket;
 import dev.kgriffon.simplegame.network.packet.s2c.*;
 import dev.kgriffon.simplegame.score.ScoreManager;
 import dev.kgriffon.simplegame.util.ColorUtil;
@@ -115,6 +116,14 @@ public class ServerLauncher {
                         server.sendToAllTCP(new NewProjectile(projectile.getId(), player.getId(), player.getX(), player.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB()));
 //                        bytesSent += (long) estimatePacketSize(new NewProjectile(pkt.getX(), pkt.getY(), pkt.getDx(), pkt.getDy(), player.getColor().getRGB())) * (server.getConnections().size() - 1);
                     }
+                } else if (packet instanceof SuicidePacket) {
+                    Player player = players.get(connection.getID());
+                    float x = (float) (Math.random() * Shared.WIDTH);
+                    float y = (float) (Math.random() * Shared.HEIGHT);
+                    player.setX(x);
+                    player.setY(y);
+                    connection.sendTCP(new PlayerPosition(connection.getID(), x, y));
+                    server.sendToAllExceptUDP(connection.getID(), new PlayerPosition(connection.getID(), x, y));
                 }
             }
 

@@ -25,6 +25,7 @@ import dev.kgriffon.simplegame.network.Network;
 import dev.kgriffon.simplegame.network.packet.c2s.LoginRequest;
 import dev.kgriffon.simplegame.network.packet.c2s.PlayerMove;
 import dev.kgriffon.simplegame.network.packet.c2s.ShootProjectile;
+import dev.kgriffon.simplegame.network.packet.c2s.SuicidePacket;
 import dev.kgriffon.simplegame.network.packet.s2c.*;
 import dev.kgriffon.simplegame.score.ScoreEntry;
 
@@ -300,7 +301,7 @@ public class GameScreen implements Screen {
                 client.sendUDP(pkt);
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isButtonJustPressed(0)) {
                 Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
                 worldViewport.unproject(mouse);
                 float dx = mouse.x - player.getX();
@@ -308,6 +309,11 @@ public class GameScreen implements Screen {
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
                 ShootProjectile pkt = new ShootProjectile(dx / distance, dy / distance);
                 client.sendTCP(pkt);
+            }
+
+            // Suicide
+            if (Gdx.input.isKeyJustPressed(Input.Keys.DEL)) {
+                client.sendTCP(new SuicidePacket());
             }
         }
     }
